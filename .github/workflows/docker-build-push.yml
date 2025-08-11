@@ -134,22 +134,18 @@ jobs:
               "platform": ["amd64"],
               "include": [{
                 "platform": "amd64",
-                "runner": "blacksmith-4vcpu-ubuntu-2204",
+                "runner": "ubuntu-latest",
                 "docker_platform": "linux/amd64"
               }]
             }'
           else
-            # All other builds (stable, nightly, dev, PR) need both platforms
+            # All other builds use AMD64 only for simplicity
             MATRIX='{
-              "platform": ["amd64", "arm64"],
+              "platform": ["amd64"],
               "include": [{
                 "platform": "amd64",
-                "runner": "blacksmith-4vcpu-ubuntu-2204",
+                "runner": "ubuntu-latest",
                 "docker_platform": "linux/amd64"
-              }, {
-                "platform": "arm64",
-                "runner": "blacksmith-4vcpu-ubuntu-2204-arm",
-                "docker_platform": "linux/arm64"
               }]
             }'
           fi
@@ -174,10 +170,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup and Build
-        uses: n8n-io/n8n/.github/actions/setup-nodejs-blacksmith@f5fbbbe0a28a886451c886cac6b49192a39b0eea # v1.104.1
+      - name: Setup pnpm CLI
+        uses: pnpm/action-setup@v4
         with:
-          build-command: pnpm build:n8n
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build n8n
+        run: pnpm build:n8n
 
       - name: Determine Docker tags
         id: determine-tags
@@ -279,7 +287,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push Docker image
-        uses: useblacksmith/build-push-action@574eb0ee0b59c6a687ace24192f0727dfb65d6d7 # v1.2
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: ./docker/images/n8n/Dockerfile
@@ -362,17 +370,10 @@ jobs:
 
           echo "Creating GHCR manifest: $MANIFEST_TAG"
 
-          # For branch builds, only AMD64 is built
-          if [[ "$RELEASE_TYPE" == "branch" ]]; then
-            docker buildx imagetools create \
-              --tag $MANIFEST_TAG \
-              ${MANIFEST_TAG}-amd64
-          else
-            docker buildx imagetools create \
-              --tag $MANIFEST_TAG \
-              ${MANIFEST_TAG}-amd64 \
-              ${MANIFEST_TAG}-arm64
-          fi
+          # Only AMD64 is built for all releases in this fork
+          docker buildx imagetools create \
+            --tag $MANIFEST_TAG \
+            ${MANIFEST_TAG}-amd64
 
       - name: Create Docker Hub multi-arch manifest
         if: steps.dockerhub_check.outputs.CREATE_DOCKERHUB_MANIFEST == 'true'
@@ -383,8 +384,7 @@ jobs:
 
           docker buildx imagetools create \
             --tag $MANIFEST_TAG \
-            ${MANIFEST_TAG}-amd64 \
-            ${MANIFEST_TAG}-arm64
+            ${MANIFEST_TAG}-amd64
 
   call-success-url:
     name: Call Success URL
