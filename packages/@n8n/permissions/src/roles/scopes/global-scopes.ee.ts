@@ -99,5 +99,6 @@ export const GLOBAL_MEMBER_SCOPES: Scope[] = [
 	'user:list',
 	'variable:list',
 	'variable:read',
+	'project:create',
 	'dataStore:list',
 ];
