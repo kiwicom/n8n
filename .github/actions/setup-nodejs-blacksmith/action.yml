@@ -21,9 +21,10 @@ runs:
   using: 'composite'
   steps:
     - name: Setup Node.js
-      uses: useblacksmith/setup-node@65c6ca86fdeb0ab3d85e78f57e4f6a7e4780b391 # v5.0.4
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
+        cache: pnpm
 
     - name: Setup pnpm and Install Dependencies
       uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
@@ -31,11 +32,15 @@ runs:
         run_install: true
 
     - name: Configure Turborepo Cache
-      uses: useblacksmith/caching-for-turbo@bafb57e7ebdbf1185762286ec94d24648cd3938a # v1
+      uses: actions/cache@v4
+      with:
+        path: .turbo
+        key: turbo-${{ runner.os }}-${{ github.sha }}
+        restore-keys: turbo-${{ runner.os }}-
 
-    - name: Setup Docker Builder for Docker Cache
+    - name: Setup Docker Buildx for Cache
       if: ${{ inputs.enable-docker-cache == 'true' }}
-      uses: useblacksmith/setup-docker-builder@0b434dfbb431f4e3a2bcee7a773a56bd363184c5 # v1
+      uses: docker/setup-buildx-action@v3
 
     - name: Build Project
       run: ${{ inputs.build-command }}
