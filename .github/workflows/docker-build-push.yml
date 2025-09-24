@@ -11,8 +11,9 @@ env:
   NODE_OPTIONS: '--max-old-space-size=7168'
 
 on:
-  schedule:
-    - cron: '0 0 * * *'
+  # Disabled automatic triggers for custom fork
+  # schedule:
+  #   - cron: '0 0 * * *'
 
   workflow_call:
     inputs:
@@ -43,14 +44,14 @@ on:
         required: false
         type: string
 
-  pull_request:
-    types:
-      - opened
-      - ready_for_review
-    paths:
-      - '.github/workflows/docker-build-push.yml'
-      - 'docker/images/n8n/Dockerfile'
-      - 'docker/images/runners/Dockerfile'
+  # pull_request:
+  #   types:
+  #     - opened
+  #     - ready_for_review
+  #   paths:
+  #     - '.github/workflows/docker-build-push.yml'
+  #     - 'docker/images/n8n/Dockerfile'
+  #     - 'docker/images/runners/Dockerfile'
 
 jobs:
   determine-build-context:
